@@ -1,0 +1,99 @@
+# For more information: https://laravel.com/docs/sail
+version: '3.2'
+services:
+    vidurapp:
+        build:
+            context: ./
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: nimmis/alpine-apache:latest
+        container_name: vidurbackend
+        ports:
+            - '8000:80'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        # volumes:
+        #     - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - mysql
+            - redis
+            # - selenium
+    # selenium:
+    #     image: 'selenium/standalone-chrome'
+    #     volumes:
+    #         - '/dev/shm:/dev/shm'
+    #     networks:
+    #         - sail
+    #     depends_on:
+    #         - laravel.test
+    mysql:
+        image: 'mysql/mysql-server:8.0.23'
+        container_name: mysql
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        networks:
+            - sail
+        volumes:
+         - type: bind
+           source: /home/opc/VidurDatabaseVolume/test2
+           target: /var/lib/mysql
+    myadmin:
+        image: 'phpmyadmin:latest'
+        container_name: myadmin
+        ports:
+            - '8080:80'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+            PMA_HOST: 'mysql'
+            PMA_PORT: 3306
+            PMA_ABSOLUTE_URI: 'http://15.207.102.173/phpmyadmin/'
+            PMA_ARBITRARY: 1
+        networks:
+            - sail
+        links: 
+            - mysql
+    redis:
+        image: 'redis:alpine'
+        container_name: redis
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'sailredis:/data'
+        networks:
+            - sail
+    # memcached:
+    #     image: 'memcached:alpine'
+    #     ports:
+    #         - '11211:11211'
+    #     networks:
+    #         - sail
+    # mailhog:
+    #     image: 'mailhog/mailhog:latest'
+    #     container_name: mailhog
+    #     ports:
+    #         - 1025:1025
+    #         - 8025:8025
+    #     networks:
+    #         - sail
+networks:
+    sail:
+        driver: bridge
+volumes:
+    sailmysql:
+        driver: local
+    sailredis:
+        driver: local
